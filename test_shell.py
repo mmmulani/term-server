@@ -65,3 +65,34 @@ def test_run_echo(shell):
         "identifier": "1",
       },
     })
+
+def test_exit_codes(shell):
+  expect_msg_type(shell, 'directory_info')
+
+  def test_error_code(code):
+    import sys
+    test_error_code.counter += 1
+    send_msg(shell,
+      {
+        "type": "start_task",
+        "message": {
+          "identifier": str(test_error_code.counter),
+          "arguments": [sys.executable, '-c', "import sys; sys.exit({0})".format(code)],
+        }
+      })
+    expect_msg(shell,
+      {
+        "type": "task_done",
+        "message": {
+          "method": "exit",
+          "code": code,
+          "identifier": str(test_error_code.counter),
+        },
+      })
+  test_error_code.counter = 10
+
+  test_error_code(10)
+  test_error_code(12)
+  test_error_code(127)
+  test_error_code(130)
+  test_error_code(255)
