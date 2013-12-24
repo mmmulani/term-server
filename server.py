@@ -3,6 +3,7 @@ from threading import Thread
 import json
 import pty
 import os
+import signal
 import sys
 import logging
 
@@ -20,7 +21,10 @@ def command_run_loop():
     log('Got command with type {0}'.format(command['type']))
     if command['type'] == 'start_task':
       log('Going to run command with arguments {0}'.format(command['message']))
-    
+    elif command['type'] == 'exit':
+      log('Exiting')
+      os.kill(os.getpgid(0), signal.SIGKILL)
+
     main_queue.put(command)
 
 def child_run_loop():

@@ -2,12 +2,18 @@ import json
 import pexpect
 import pytest
 
-@pytest.fixture
-def shell(tmpdir):
+@pytest.fixture(scope="function")
+def shell(tmpdir, request):
   import sys
 
   ret = pexpect.spawn(' '.join([sys.executable, 'server.py']))
   ret.setecho(False)
+
+  def teardown():
+    ret.sendline(json.dumps({"type":"exit"}))
+    ret.wait()
+  request.addfinalizer(teardown)
+
   return ret
 
 def expect_msg_type(shell, type):
