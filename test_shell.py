@@ -102,3 +102,59 @@ def test_exit_codes(shell):
   test_error_code(127)
   test_error_code(130)
   test_error_code(255)
+
+def test_multiple_cmds(shell):
+  expect_msg_type(shell, 'directory_info')
+
+  send_msg(shell,
+    {
+      "type": "start_task",
+      "message": {
+        "identifier": "1",
+        "arguments": ["sleep", "1"],
+      },
+    })
+
+  send_msg(shell,
+    {
+      "type": "make_enough_terms",
+      "message": 2,
+    })
+
+  send_msg(shell,
+    {
+      "type": "start_task",
+      "message": {
+        "identifier": "2",
+        "arguments": ["echo", "test"],
+      },
+    })
+
+  expect_msg(shell,
+    {
+      "type": "task_output",
+      "message": {
+        "output": "test\r\n",
+        "identifier": "2",
+      },
+    })
+
+  expect_msg(shell,
+    {
+      "type": "task_done",
+      "message": {
+        "method": "exit",
+        "code": 0,
+        "identifier": "2",
+      },
+    })
+
+  expect_msg(shell,
+    {
+      "type": "task_done",
+      "message": {
+        "method": "exit",
+        "code": 0,
+        "identifier": "1",
+      },
+    })
