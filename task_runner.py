@@ -45,7 +45,7 @@ def start(main_queue_, output_queue_):
   os.environ['TERM'] = 'xterm-256color'
 
   # Some initial data.
-  inform_about_directory(os.environ['PWD'])
+  inform_about_directory(os.getcwd())
 
   # Do inits that should provide different objects for each process.
   logger = logging.getLogger('server')
@@ -64,7 +64,7 @@ def start(main_queue_, output_queue_):
     attachment = msg['message']
 
     log('got message of type {0} in main queue'.format(msg['type']))
-    
+
     if msg['type'] == 'handle_input':
       write_input_to_task(attachment)
     elif msg['type'] == 'resize_term':
@@ -222,7 +222,7 @@ def shell_run_loop(send_to_shell):
       change_directory(attachment)
     elif msg['type'] == 'cat_image':
       cat_image(attachment)
-    
+
 def write_input_to_task(input):
   global fd_to_task
   fd = -1
