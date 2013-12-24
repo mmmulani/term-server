@@ -158,3 +158,45 @@ def test_multiple_cmds(shell):
         "identifier": "1",
       },
     })
+
+def test_change_dir(shell, tmpdir):
+  expect_msg_type(shell, 'directory_info')
+
+  send_msg(shell,
+    {
+      "type": "dir_change",
+      "message": {
+        "directory": str(tmpdir),
+      },
+    })
+
+  expect_msg_type(shell, 'directory_info')
+  expect_msg_type(shell, 'changed_directory')
+
+  send_msg(shell,
+    {
+      "type": "start_task",
+      "message": {
+        "identifier": "1",
+        "arguments": ["pwd"],
+      },
+    })
+
+  expect_msg(shell,
+    {
+      "type": "task_output",
+      "message": {
+        "output": "{0}\r\n".format(str(tmpdir)),
+        "identifier": "1",
+      },
+    })
+
+  expect_msg(shell,
+    {
+      "type": "task_done",
+      "message": {
+        "method": "exit",
+        "code": 0,
+        "identifier": "1",
+      },
+    })
