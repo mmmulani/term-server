@@ -50,7 +50,7 @@ def start(main_queue_, output_queue_):
   # Do inits that should provide different objects for each process.
   logger = logging.getLogger('server')
   logger.setLevel(logging.DEBUG)
-  fh = logging.FileHandler('/home/mehdi/term-server/server.log')
+  fh = logging.FileHandler('server.log')
   formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
   fh.setFormatter(formatter)
   fh.setLevel(logging.DEBUG)
@@ -146,7 +146,7 @@ def start_shell():
     termios.ECHOKE | termios.ECHOE | termios.ECHOK | termios.ECHO | termios.ECHOCTL | termios.ISIG | termios.ICANON | termios.IEXTEN | termios.PENDIN,
     termios.B230400,
     termios.B230400,
-    [b'\x03', b'\x1c', b'\x7f', b'\x15', b'\x04', b'\x00', b'\x01', b'\x00', b'\x11', b'\x13', b'\x1a', b'\xff', b'\x12', b'\x0f', b'\x17', b'\x16', b'\xff', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00']
+    [b'\x04', b'\xff', b'\xff', b'\x7f', b'\x17', b'\x15', b'\x12', b'\xff', b'\x03', b'\x1c', b'\x1a', b'\x19', b'\x11', b'\x13', b'\x16', b'\x0f', b'\x01', b'\x00', b'\x14', b'\xff']
     ])
 
   t = Thread(target=shell_response_loop, args=(fd,send_to_plex))

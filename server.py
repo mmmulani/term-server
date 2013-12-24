@@ -35,7 +35,7 @@ def child_run_loop():
 if __name__ == '__main__':
   logger = logging.getLogger('server')
   logger.setLevel(logging.DEBUG)
-  fh = logging.FileHandler('/home/mehdi/term-server/server.log')
+  fh = logging.FileHandler('server.log')
   formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
   fh.setFormatter(formatter)
   fh.setLevel(logging.DEBUG)
