@@ -1,5 +1,9 @@
 language: python
 python:
   - "3.3"
-install: "pip install pexpect"
+install:
+  # Workaround for https://github.com/travis-ci/travis-cookbooks/issues/155
+  # An issue where multiprocessing cannot create a Queue.
+  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
+  - pip install pexpect
 script: py.test

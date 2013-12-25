@@ -29,9 +29,13 @@ def get_shell_msg(shell, timeout):
     # This will happen if we receive non-JSON which usually means
     # a program error.
     sys.stdout.write(shell.before.decode())
-    shell.expect(pexpect.TIMEOUT, timeout=1)
+    shell.expect([pexpect.TIMEOUT, pexpect.EOF], timeout=1)
     text = shell.before
     sys.stdout.write(text.decode())
+
+    f = open('server.log')
+    sys.stdout.write(f.read())
+
     assert 0
 
   return None
@@ -50,6 +54,20 @@ def expect_msg(shell, msg, timeout=2):
   output_msg = get_shell_msg(shell, timeout)
   assert msg == output_msg
 
+def expect_msgs(shell, msgs, timeout=2):
+  output_msgs = []
+  for m in msgs:
+    output_msgs.append(get_shell_msg(shell, timeout))
+
+  for m in msgs:
+    try:
+      output_msgs.remove(m)
+    except ValueError:
+      pass
+
+  assert len(output_msgs) == 0
+
+
 def send_msg(shell, msg):
   shell.sendline(json.dumps(msg))
 
@@ -58,6 +76,10 @@ def test_start_shell(shell):
 
 def test_run_echo(shell):
   expect_msg_type(shell, 'directory_info')
+
+  import time
+  time.sleep(1)
+
   send_msg(shell,
     {
       "type": "start_task",
@@ -67,16 +89,14 @@ def test_run_echo(shell):
       },
     })
 
-  expect_msg(shell,
-    {
+  expect_msgs(shell,
+    [{
       "type": "task_output",
       "message": {
         "output": "test\r\n",
         "identifier": "1",
       },
-    })
-
-  expect_msg(shell,
+    },
     {
       "type": "task_done",
       "message": {
@@ -84,7 +104,7 @@ def test_run_echo(shell):
         "code": 0,
         "identifier": "1",
       },
-    })
+    }])
 
 def test_exit_codes(shell):
   expect_msg_type(shell, 'directory_info')

@@ -139,6 +139,8 @@ def start_shell():
   fcntl.ioctl(fd, termios.TIOCSWINSZ,
       struct.pack("HHHH", term_size[1], term_size[0], 0, 0))
 
+  control_chars = [b'\x04', b'\xff', b'\xff', b'\x7f', b'\x17', b'\x15', b'\x12', b'\xff', b'\x03', b'\x1c', b'\x1a', b'\x19', b'\x11', b'\x13', b'\x16', b'\x0f', b'\x01', b'\x00', b'\x14', b'\xff']
+  control_chars.extend(b'\x00' for _ in range(termios.NCCS - len(control_chars)))
   termios.tcsetattr(fd, termios.TCSANOW, [
     termios.BRKINT | termios.ICRNL,
     termios.OPOST | termios.ONLCR,
@@ -146,7 +148,7 @@ def start_shell():
     termios.ECHOKE | termios.ECHOE | termios.ECHOK | termios.ECHO | termios.ECHOCTL | termios.ISIG | termios.ICANON | termios.IEXTEN | termios.PENDIN,
     termios.B230400,
     termios.B230400,
-    [b'\x04', b'\xff', b'\xff', b'\x7f', b'\x17', b'\x15', b'\x12', b'\xff', b'\x03', b'\x1c', b'\x1a', b'\x19', b'\x11', b'\x13', b'\x16', b'\x0f', b'\x01', b'\x00', b'\x14', b'\xff']
+    control_chars,
     ])
 
   t = Thread(target=shell_response_loop, args=(fd,send_to_plex))
