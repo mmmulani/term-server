@@ -165,16 +165,14 @@ def test_multiple_cmds(shell):
       },
     })
 
-  expect_msg(shell,
-    {
+  expect_msgs(shell,
+    [{
       "type": "task_output",
       "message": {
         "output": "test\r\n",
         "identifier": "2",
       },
-    })
-
-  expect_msg(shell,
+    },
     {
       "type": "task_done",
       "message": {
@@ -182,9 +180,7 @@ def test_multiple_cmds(shell):
         "code": 0,
         "identifier": "2",
       },
-    })
-
-  expect_msg(shell,
+    },
     {
       "type": "task_done",
       "message": {
@@ -192,7 +188,7 @@ def test_multiple_cmds(shell):
         "code": 0,
         "identifier": "1",
       },
-    })
+    }])
 
 def test_change_dir(shell, tmpdir):
   expect_msg_type(shell, 'directory_info')
@@ -217,16 +213,14 @@ def test_change_dir(shell, tmpdir):
       },
     })
 
-  expect_msg(shell,
-    {
+  expect_msgs(shell,
+    [{
       "type": "task_output",
       "message": {
         "output": "{0}\r\n".format(str(tmpdir)),
         "identifier": "1",
       },
-    })
-
-  expect_msg(shell,
+    },
     {
       "type": "task_done",
       "message": {
@@ -234,7 +228,7 @@ def test_change_dir(shell, tmpdir):
         "code": 0,
         "identifier": "1",
       },
-    })
+    }])
 
 def test_terminal_input(shell):
   expect_msg_type(shell, 'directory_info')
