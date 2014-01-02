@@ -16,7 +16,6 @@ class ProcessServer:
     if hasattr(self, func_name):
       server.log("sending the message..")
       getattr(self, func_name)(**content)
-    # self.task_runner.handle_client_message(msg_type, content)
 
   def _send_message(self, msg_type, content):
     self.io_handler.send_message(msg_type, content)

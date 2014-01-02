@@ -80,10 +80,6 @@ def test_start_shell(shell):
 def test_run_echo(shell):
   expect_msg_type(shell, 'directory_info')
 
-  # XXX: This is a hack to account for slow TravisCI machines.
-  import time
-  time.sleep(1)
-
   send_msg(shell,
     {
       "type": "start_task",

@@ -32,23 +32,8 @@ class TaskRunner:
     self.process_server = process_server
     self.identifier = -1
 
-  def handle_client_message(self, msg_type, content):
-    global send_to_shells, fd_to_task
-    msg = { "type": msg_type, "message": content }
-    attachment = msg['message']
-
-    log('got message of type {0} in main queue'.format(msg['type']))
-
-    if msg['type'] == 'handle_input':
-      write_input_to_task(attachment)
-    elif msg['type'] == 'resize_term':
-      term_size = (int(attachment['columns']), int(attachment['rows']))
-      resize_terminal(attachment)
-
   def start_shell(self):
     global term_size
-
-    log('making a shell')
 
     (self.master_fd, self.slave_fd) = pty.openpty()
 
@@ -86,8 +71,12 @@ class TaskRunner:
         import server
         server.log('read thread error: {0}'.format(str(e)))
         break
+      if self.available():
+        identifier = self.old_id
+      else:
+        identifier = self.identifier
       self.process_server._send_message('task_output', {
-        "output": output.decode('utf-8'), "identifier": self.identifier })
+        "output": output.decode('utf-8'), "identifier": identifier })
 
   def run_program_in_tty(self, identifier, arguments):
     # Determine the executable that we are going to run.
@@ -100,8 +89,6 @@ class TaskRunner:
         if os.path.isfile(path + '/' + executable):
           executable = path + '/' + executable
           break
-
-    log('Running {0}'.format(executable))
 
     self.identifier = identifier
 
@@ -131,24 +118,14 @@ class TaskRunner:
     result['identifier'] = self.identifier
     self.process_server._send_message('task_done', result)
 
+    # It is possible to get output after we are done running, so we need to old
+    # identifier to correctly inform about the remaining output.
+    self.old_id = self.identifier
     self.identifier = -1
 
   def available(self):
     return self.identifier == -1
 
-def log(msg):
-  import server
-  server.log(msg)
-
-def signal_handler(signal, frame):
-  log('Got signal {0}, doing nothing'.format(signal))
-
-def resize_terminal(options):
-  global all_fds
-
-  for fd in all_fds:
+  def resize_terminal(self, rows, columns):
     fcntl.ioctl(fd, termios.TIOCSWINSZ,
-      struct.pack("HHHH", int(options['rows']), int(options['columns']), 0, 0))
-
-def send_message(msg_type, content):
-  task_runner.process_server._send_message(msg_type, content)
+      struct.pack("HHHH", int(rows), int(columns), 0, 0))
