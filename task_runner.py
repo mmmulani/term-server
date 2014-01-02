@@ -11,8 +11,6 @@ import struct
 import sys
 import termios
 
-main_queue = None
-output_queue = None
 current_pid = -1
 logger = None
 current_task_id = 0
@@ -27,40 +25,16 @@ send_to_shells = []
 
 is_shell = False
 
-def log(msg):
-  global logger
-  logger.info(msg)
+task_runner = None
 
-def signal_handler(signal, frame):
-  log('Got signal {0}, doing nothing'.format(signal))
+class TaskRunner:
+  def __init__(self, io_handler):
+    self.io_handler = io_handler
+    self.io_handler.process_server = self
 
-def start(main_queue_, output_queue_):
-  global logger, main_queue, output_queue
-  global send_to_shells, send_to_plex, fd_to_task
-  global term_size, current_dir
-
-  main_queue = main_queue_
-  output_queue = output_queue_
-
-  os.environ['TERM'] = 'xterm-256color'
-
-  # Some initial data.
-  inform_about_directory(os.getcwd())
-
-  # Do inits that should provide different objects for each process.
-  logger = logging.getLogger('server')
-  logger.setLevel(logging.DEBUG)
-  fh = logging.FileHandler('server.log')
-  formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-  fh.setFormatter(formatter)
-  fh.setLevel(logging.DEBUG)
-  logger.addHandler(fh)
-
-  make_enough_terms(1)
-
-  # Our run loop. LOL.
-  while True:
-    msg = main_queue.get()
+  def handle_client_message(self, msg_type, content):
+    global send_to_shells, fd_to_task
+    msg = { "type": msg_type, "message": content }
     attachment = msg['message']
 
     log('got message of type {0} in main queue'.format(msg['type']))
@@ -86,6 +60,36 @@ def start(main_queue_, output_queue_):
       elif msg['type'] == 'cat_image':
         shell, fd = send_to_shells[0]
         shell.send(msg)
+
+def log(msg):
+  global logger
+  logger.info(msg)
+
+def signal_handler(signal, frame):
+  log('Got signal {0}, doing nothing'.format(signal))
+
+def start(io_handler):
+  global logger, task_runner
+  global send_to_shells, send_to_plex, fd_to_task
+  global term_size, current_dir
+
+  task_runner = TaskRunner(io_handler)
+
+  os.environ['TERM'] = 'xterm-256color'
+
+  # Some initial data.
+  inform_about_directory(os.getcwd())
+
+  # Do inits that should provide different objects for each process.
+  logger = logging.getLogger('server')
+  logger.setLevel(logging.DEBUG)
+  fh = logging.FileHandler('server.log')
+  formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  fh.setFormatter(formatter)
+  fh.setLevel(logging.DEBUG)
+  logger.addHandler(fh)
+
+  make_enough_terms(1)
 
 def make_enough_terms(num):
   global send_to_shells, term_size, current_dir
@@ -308,12 +312,7 @@ def resize_terminal(options):
       struct.pack("HHHH", int(options['rows']), int(options['columns']), 0, 0))
 
 def send_message(msg_type, content):
-  global output_queue
-
-  output_queue.put({
-    'type': msg_type,
-    'message': content,
-  })
+  task_runner.io_handler.send_message(msg_type, content)
 
 def forward_message(msg_type, content):
   global is_shell

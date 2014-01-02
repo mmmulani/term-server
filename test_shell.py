@@ -10,7 +10,10 @@ def shell(tmpdir, request):
   ret.setecho(False)
 
   def teardown():
-    ret.sendline(json.dumps({"type":"exit"}))
+    try:
+      ret.sendline(json.dumps({"type":"exit"}))
+    except OSError:
+      pass
   request.addfinalizer(teardown)
 
   return ret
@@ -77,6 +80,7 @@ def test_start_shell(shell):
 def test_run_echo(shell):
   expect_msg_type(shell, 'directory_info')
 
+  # XXX: This is a hack to account for slow TravisCI machines.
   import time
   time.sleep(1)
 

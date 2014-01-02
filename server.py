@@ -1,40 +1,20 @@
-from multiprocessing import Process, Queue
-from threading import Thread
 import json
-import pty
+import logging
 import os
+import pty
 import signal
 import sys
-import logging
+
+from multiprocessing import Process, Queue
+from threading import Thread
 
 import task_runner
+
+from io_handler import IOHandler
 
 def log(msg):
   global logger
   logger.info(msg)
-
-def command_run_loop():
-  global main_queue
-
-  while True:
-    command = json.loads(sys.stdin.readline().rstrip('\n'))
-    log('Got command with type {0}'.format(command['type']))
-    if command['type'] == 'start_task':
-      log('Going to run command with arguments {0}'.format(command['message']))
-    elif command['type'] == 'exit':
-      log('Exiting')
-      os.kill(os.getpgid(0), signal.SIGKILL)
-
-    main_queue.put(command)
-
-def child_run_loop():
-  global output_queue
-
-  while True:
-    output = output_queue.get()
-    log('Sending output with type {0}'.format(output['type']))
-    sys.stdout.write(json.dumps(output))
-    sys.stdout.write('\n')
 
 if __name__ == '__main__':
   logger = logging.getLogger('server')
@@ -47,12 +27,6 @@ if __name__ == '__main__':
 
   logger.info('--- started server ---')
 
-  main_queue = Queue()
-  output_queue = Queue()
-  p = Process(target=task_runner.start, args=(main_queue, output_queue))
-  p.start()
+  io_handler = IOHandler()
 
-  t = Thread(target=command_run_loop)
-  t.start()
-  t = Thread(target=child_run_loop)
-  t.start()
+  task_runner.start(io_handler)
