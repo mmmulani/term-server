@@ -13,12 +13,13 @@ import task_runner
 from io_handler import IOHandler
 from process_server import ProcessServer
 
+logger = logging.getLogger('server')
+
 def log(msg):
   global logger
   logger.info(msg)
 
 if __name__ == '__main__':
-  logger = logging.getLogger('server')
   logger.setLevel(logging.DEBUG)
   fh = logging.FileHandler('server.log')
   formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -30,5 +31,4 @@ if __name__ == '__main__':
 
   io_handler = IOHandler()
   process_server = ProcessServer(io_handler)
-
-  task_runner.start(process_server.task_runner)
+  process_server.start()

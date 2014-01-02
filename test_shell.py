@@ -155,7 +155,9 @@ def test_multiple_cmds(shell):
   send_msg(shell,
     {
       "type": "make_enough_terms",
-      "message": 2,
+      "message": {
+        "amount": 2,
+      },
     })
 
   send_msg(shell,
