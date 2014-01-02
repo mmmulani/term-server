@@ -72,13 +72,19 @@ class TaskRunner:
     t.start()
 
   def write_input(self, input):
-    os.write(self.master_fd, bytes.fromhex(input))
+    import server
+    try:
+      n = os.write(self.master_fd, bytes.fromhex(input))
+    except OSError as e:
+      server.log('error writing bytes: {0}'.format(str(e)))
 
   def read_thread(self):
     while True:
       try:
         output = os.read(self.master_fd, 1024)
       except OSError as e:
+        import server
+        server.log('read thread error: {0}'.format(str(e)))
         break
       self.process_server._send_message('task_output', {
         "output": output.decode('utf-8'), "identifier": self.identifier })
@@ -102,9 +108,12 @@ class TaskRunner:
     fd = self.master_fd
     pid = os.fork()
     if pid == 0:
-      os.dup2(self.master_fd, 0)
-      os.dup2(self.master_fd, 1)
-      os.dup2(self.master_fd, 2)
+      os.dup2(self.slave_fd, 0)
+      os.dup2(self.slave_fd, 1)
+      os.dup2(self.slave_fd, 2)
+      os.close(self.slave_fd)
+      os.close(self.master_fd)
+
       os.execv(executable, arguments)
     else:
       self.current_pid = pid

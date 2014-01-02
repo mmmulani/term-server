@@ -11,7 +11,7 @@ def shell(tmpdir, request):
 
   def teardown():
     try:
-      ret.sendline(json.dumps({"type":"exit"}))
+      ret.sendline(json.dumps({"type":"exit", "message": {}}))
     except OSError:
       pass
   request.addfinalizer(teardown)

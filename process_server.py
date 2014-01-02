@@ -84,3 +84,6 @@ class ProcessServer:
 
     import server
     server.log("no task runners were available!!")
+
+  def _msg_exit(self):
+    os.killpg(0, 9)
