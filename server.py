@@ -11,6 +11,7 @@ from threading import Thread
 import task_runner
 
 from io_handler import IOHandler
+from process_server import ProcessServer
 
 def log(msg):
   global logger
@@ -28,5 +29,6 @@ if __name__ == '__main__':
   logger.info('--- started server ---')
 
   io_handler = IOHandler()
+  process_server = ProcessServer(io_handler)
 
-  task_runner.start(io_handler)
+  task_runner.start(process_server.task_runner)

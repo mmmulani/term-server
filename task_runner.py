@@ -28,9 +28,8 @@ is_shell = False
 task_runner = None
 
 class TaskRunner:
-  def __init__(self, io_handler):
-    self.io_handler = io_handler
-    self.io_handler.process_server = self
+  def __init__(self, process_server):
+    self.process_server = process_server
 
   def handle_client_message(self, msg_type, content):
     global send_to_shells, fd_to_task
@@ -68,12 +67,12 @@ def log(msg):
 def signal_handler(signal, frame):
   log('Got signal {0}, doing nothing'.format(signal))
 
-def start(io_handler):
+def start(task_runner_):
   global logger, task_runner
   global send_to_shells, send_to_plex, fd_to_task
   global term_size, current_dir
 
-  task_runner = TaskRunner(io_handler)
+  task_runner = task_runner_
 
   os.environ['TERM'] = 'xterm-256color'
 
@@ -312,7 +311,7 @@ def resize_terminal(options):
       struct.pack("HHHH", int(options['rows']), int(options['columns']), 0, 0))
 
 def send_message(msg_type, content):
-  task_runner.io_handler.send_message(msg_type, content)
+  task_runner.process_server._send_message(msg_type, content)
 
 def forward_message(msg_type, content):
   global is_shell
