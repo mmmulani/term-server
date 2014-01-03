@@ -16,7 +16,6 @@ logger = None
 current_task_id = 0
 fd_to_task = {}
 all_fds = []
-term_size = (80, 24)
 current_dir = None
 
 send_to_shell = None
@@ -31,6 +30,7 @@ class TaskRunner:
   def __init__(self, process_server):
     self.process_server = process_server
     self.identifier = -1
+    self.current_pid = None
 
   def start_shell(self):
     global term_size
@@ -38,8 +38,7 @@ class TaskRunner:
     (self.master_fd, self.slave_fd) = pty.openpty()
 
     # Initialize the terminal.
-    fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ,
-        struct.pack("HHHH", term_size[1], term_size[0], 0, 0))
+    self.resize_terminal()
 
     control_chars = [b'\x04', b'\xff', b'\xff', b'\x7f', b'\x17', b'\x15', b'\x12', b'\xff', b'\x03', b'\x1c', b'\x1a', b'\x19', b'\x11', b'\x13', b'\x16', b'\x0f', b'\x01', b'\x00', b'\x14', b'\xff']
     control_chars.extend(b'\x00' for _ in range(termios.NCCS - len(control_chars)))
@@ -122,10 +121,14 @@ class TaskRunner:
     # identifier to correctly inform about the remaining output.
     self.old_id = self.identifier
     self.identifier = -1
+    self.current_pid = None
 
   def available(self):
     return self.identifier == -1
 
-  def resize_terminal(self, rows, columns):
-    fcntl.ioctl(fd, termios.TIOCSWINSZ,
-      struct.pack("HHHH", int(rows), int(columns), 0, 0))
+  def resize_terminal(self):
+    (columns, rows) = self.process_server.term_size
+    fcntl.ioctl(self.slave_fd, termios.TIOCSWINSZ,
+      struct.pack("HHHH", rows, columns, 0, 0))
+    if self.current_pid is not None:
+      os.kill(self.current_pid, signal.SIGWINCH)

@@ -8,6 +8,7 @@ class ProcessServer:
     self.io_handler = io_handler
     self.io_handler.process_server = self
     self.task_runners = []
+    self.term_size = (80, 24)
 
   def handle_client_message(self, msg_type, content):
     import server
@@ -86,3 +87,8 @@ class ProcessServer:
 
   def _msg_exit(self):
     os.killpg(0, 9)
+
+  def _msg_resize(self, rows, columns):
+    self.term_size = (int(columns), int(rows))
+    for tr in self.task_runners:
+      tr.resize_terminal()

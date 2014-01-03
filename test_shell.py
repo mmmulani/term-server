@@ -3,6 +3,8 @@ import pexpect
 import pytest
 import sys
 
+test_id = 100
+
 @pytest.fixture(scope="function")
 def shell(tmpdir, request):
 
@@ -43,6 +45,9 @@ def get_shell_msg(shell, timeout):
 
   return None
 
+def str_to_hex(str_):
+  return ''.join("{:02x}".format(ord(c)) for c in str_)
+
 def expect_msg_type(shell, type, timeout=2):
   msg = get_shell_msg(shell, timeout)
   assert msg["type"] == type, \
@@ -61,6 +66,31 @@ def expect_msg_output_partial(shell, output, timeout=2):
   msg = get_shell_msg(shell, timeout)
   assert msg["message"]["output"].startswith(output), \
     "Expected: {0}, got: {1} with full message of {2}".format(output, msg["message"]["output"], msg)
+
+def expect_program_output(shell, cmd, output, timeout=2):
+  global test_id
+  test_id = test_id + 1
+  iden = test_id
+
+  send_msg(shell,
+    {
+      "type": "start_task",
+      "message": {
+        "identifier": str(iden),
+        "arguments": cmd.split(" "),
+      },
+    })
+
+  expect_msg_output(shell, output, timeout)
+  expect_msg(shell,
+    {
+      "type": "task_done",
+      "message": {
+        "method": "exit",
+        "code": 0,
+        "identifier": str(iden),
+      },
+    }, timeout)
 
 def expect_msg(shell, msg, timeout=2):
   output_msg = get_shell_msg(shell, timeout)
@@ -211,7 +241,14 @@ def test_change_dir(shell, tmpdir):
     })
 
   expect_msg_type(shell, 'directory_info')
-  expect_msg_type(shell, 'changed_directory')
+
+  expect_msg(shell,
+    {
+      "type": "changed_directory",
+      "message": {
+        "directory": str(tmpdir),
+      },
+    })
 
   send_msg(shell,
     {
@@ -241,9 +278,6 @@ def test_change_dir(shell, tmpdir):
 
 def test_terminal_input(shell):
   expect_msg_type(shell, 'directory_info')
-
-  def str_to_hex(str_):
-    return ''.join("{:02x}".format(ord(c)) for c in str_)
 
   send_msg(shell,
     {
@@ -288,3 +322,23 @@ def test_terminal_input(shell):
   expect_msg_output_partial(shell, "^D")
 
   expect_msg_type(shell, "task_done")
+
+def test_terminal_size(shell):
+  expect_msg_type(shell, 'directory_info')
+
+  expect_program_output(shell, "tput lines", "24\r\n")
+  expect_program_output(shell, "tput cols", "80\r\n")
+
+  send_msg(shell,
+    {
+      "type": "resize",
+      "message": {
+        "columns": 81,
+        "rows": 20,
+      },
+    })
+
+  expect_program_output(shell, "tput lines", "20\r\n")
+  expect_program_output(shell, "tput cols", "81\r\n")
+
+  # TODO: Test that resizing while a program is live works.
