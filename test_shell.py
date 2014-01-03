@@ -49,8 +49,17 @@ def expect_msg_type(shell, type, timeout=2):
     "Expected: {0}, got: {1} with full message of {2}".format(type, msg["type"], msg)
 
 def expect_msg_output(shell, output, timeout=2):
+  collected = ""
+  while output.startswith(collected) and len(output) > len(collected):
+    msg = get_shell_msg(shell, timeout)
+    assert msg["type"] == "task_output"
+    collected += msg["message"]["output"]
+  assert collected == output, \
+    "Expected: {0}, got: {1} with full message of {2}".format(output, collected, msg)
+
+def expect_msg_output_partial(shell, output, timeout=2):
   msg = get_shell_msg(shell, timeout)
-  assert msg["message"]["output"] == output, \
+  assert msg["message"]["output"].startswith(output), \
     "Expected: {0}, got: {1} with full message of {2}".format(output, msg["message"]["output"], msg)
 
 def expect_msg(shell, msg, timeout=2):
@@ -263,7 +272,7 @@ def test_terminal_input(shell):
         "input": str_to_hex("testing\n"),
       },
     })
-  expect_msg_output(shell, "testing\r\n")
+  expect_msg_output(shell, "testing\r\ntesttesting\r\n")
 
   send_msg(shell,
     {
@@ -274,7 +283,8 @@ def test_terminal_input(shell):
         "input": "04",
       },
     })
-  expect_msg_output(shell, "testtesting\r\n")
-  expect_msg_output(shell, "^D\x08\x08")
+  # It looks like Mac and some Linux variants output different things for CTRL+D
+  # For Mac we get "^D\x08\x08" but on Linux we only get "^D".
+  expect_msg_output_partial(shell, "^D")
 
   expect_msg_type(shell, "task_done")
