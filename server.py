@@ -29,6 +29,9 @@ if __name__ == '__main__':
 
   logger.info('--- started server ---')
 
+  if len(sys.argv) > 1 and sys.argv[1] == 'remote':
+    sys.stdout.write('☃')
+
   io_handler = IOHandler()
   process_server = ProcessServer(io_handler)
   process_server.start()
