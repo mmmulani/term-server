@@ -1,4 +1,6 @@
+import fcntl
 import os
+import termios
 
 from io_handler import IOHandler
 from task_runner import TaskRunner
@@ -22,6 +24,13 @@ class ProcessServer:
     self.io_handler.send_message(msg_type, content)
 
   def start(self):
+    # If we are connected to a TTY, remove our connection to it.
+    try:
+      tty_fd = os.open('/dev/tty', os.O_RDWR)
+      fcntl.ioctl(tty_fd, termios.TIOCNOTTY)
+    except OSError as e:
+      pass
+
     os.environ['TERM'] = 'xterm-256color'
 
     self._msg_make_enough_terms(amount=1)

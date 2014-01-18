@@ -72,12 +72,15 @@ def expect_program_output(shell, cmd, output, timeout=2):
   test_id = test_id + 1
   iden = test_id
 
+  if type(cmd) == type(''):
+    cmd = cmd.split(" ")
+
   send_msg(shell,
     {
       "type": "start_task",
       "message": {
         "identifier": str(iden),
-        "arguments": cmd.split(" "),
+        "arguments": cmd,
       },
     })
 
@@ -176,6 +179,13 @@ def test_exit_codes(shell):
   test_error_code(255)
 
 def test_multiple_cmds(shell):
+  expect_msg_type(shell, 'directory_info')
+
+  expect_program_output(shell, "echo testing", "testing\r\n")
+  expect_program_output(shell, "echo 123", "123\r\n")
+  expect_program_output(shell, "echo multiline\n", "multiline\r\n\r\n")
+
+def test_multiple_cmds_same_time(shell):
   expect_msg_type(shell, 'directory_info')
 
   send_msg(shell,
@@ -342,3 +352,14 @@ def test_terminal_size(shell):
   expect_program_output(shell, "tput cols", "81\r\n")
 
   # TODO: Test that resizing while a program is live works.
+
+def test_controlling_terminal(shell):
+  expect_msg_type(shell, 'directory_info')
+
+  expect_program_output(
+    shell,
+    [sys.executable,
+      "-c",
+      "import os; print(type(os.open('/dev/tty', os.O_RDONLY))==type(0))"
+      ],
+    "True\r\n")

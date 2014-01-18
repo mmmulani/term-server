@@ -70,6 +70,8 @@ class TaskRunner:
         import server
         server.log('read thread error: {0}'.format(str(e)))
         break
+      if len(output) == 0:
+        break
       if self.available():
         identifier = self.old_id
       else:
@@ -94,11 +96,24 @@ class TaskRunner:
     fd = self.master_fd
     pid = os.fork()
     if pid == 0:
-      os.dup2(self.slave_fd, 0)
-      os.dup2(self.slave_fd, 1)
-      os.dup2(self.slave_fd, 2)
-      os.close(self.slave_fd)
       os.close(self.master_fd)
+
+      os.dup2(self.slave_fd, pty.STDIN_FILENO)
+      os.dup2(self.slave_fd, pty.STDOUT_FILENO)
+      os.dup2(self.slave_fd, pty.STDERR_FILENO)
+      os.close(self.slave_fd)
+
+      # In order to set our controlling terminal, we have to open the /dev/tty##
+      # file corresponding to our tty.
+      # We close it immediately as we don't actually need it for anything.
+      os.close(os.open(os.ttyname(pty.STDOUT_FILENO), os.O_RDWR))
+
+      # Furthermore, on some machines it seems we have to call setsid() but only
+      # if we are unable to open the controlling terminal.
+      try:
+        os.setsid()
+      except OSError as e:
+        pass
 
       os.execv(executable, arguments)
     else:
